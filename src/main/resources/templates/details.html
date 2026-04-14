@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Ticket Details</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        .detail-label {
+            font-weight: 600;
+            color: #6c757d;
+            width: 180px;
+            display: inline-block;
+        }
+        .card {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="container mt-5">
+<div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h3 class="mb-0" th:text="'Ticket Details: #' + ${ticket.ticketNo}"></h3>
+        <div>
+                <span th:classappend="${ticket.status.name() == 'COMPLETED' ? 'bg-success' : (ticket.status.name() == 'OPEN' ? 'bg-danger' : 'bg-warning')}"
+                      class="badge fs-6"
+                      th:text="${ticket.status}">
+                </span>
+        </div>
+    </div>
+
+    <div class="card-body p-4">
+        <div class="row mb-4 bg-light p-3 rounded mx-0">
+            <div class="col-md-4">
+                <small class="text-uppercase text-muted d-block">Date 日期</small>
+                <span class="h5" th:text="${ticket.date}"></span>
+            </div>
+            <div class="col-md-4 border-start">
+                <small class="text-uppercase text-muted d-block">Brand 品牌</small>
+                <span class="h5" th:text="${ticket.brand}"></span>
+            </div>
+            <div class="col-md-4 border-start">
+                <small class="text-uppercase text-muted d-block">DC Room 机房</small>
+                <span class="h5" th:text="${ticket.dcRoom}"></span>
+            </div>
+        </div>
+
+        <div class="list-group list-group-flush">
+            <div class="list-group-item d-flex">
+                <span class="detail-label">Ticket Title:</span>
+                <span th:text="${ticket.ticketTitle}"></span>
+            </div>
+            <div class="list-group-item d-flex">
+                <span class="detail-label">Parts Number:</span>
+                <span th:text="${ticket.partsNumber}"></span>
+            </div>
+        </div>
+
+        <h5 class="mt-4 mb-3 text-primary border-bottom pb-2">Resource Allocation</h5>
+
+        <div class="list-group list-group-flush">
+            <div class="list-group-item d-flex">
+                <span class="detail-label">Lead Engineer:</span>
+                <span th:text="${ticket.leadEngineer}"></span>
+            </div>
+            <div class="list-group-item d-flex">
+                <span class="detail-label">Other Engineer:</span>
+                <span th:text="${ticket.otherEngineer ?: 'N/A'}"></span>
+            </div>
+            <div class="list-group-item d-flex">
+                <span class="detail-label">Total Manpower:</span>
+                <span th:text="${ticket.manpower + ' Man-days'}"></span>
+            </div>
+        </div>
+
+        <h5 class="mt-4 mb-3 text-primary border-bottom pb-2">Timeline</h5>
+
+        <div class="row text-center">
+            <div class="col-6">
+                <div class="p-3 border rounded bg-white">
+                    <small class="text-muted d-block">Start Time</small>
+                    <strong class="text-dark h4" th:text="${ticket.startTime}"></strong>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="p-3 border rounded bg-white">
+                    <small class="text-muted d-block">End Time</small>
+                    <strong class="text-dark h4" th:text="${ticket.endTime}"></strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-footer bg-white py-3 d-flex justify-content-between">
+        <a href="/tickets/search" class="btn btn-outline-secondary">&larr; Back to Search</a>
+
+        <div class="d-flex">
+            <a th:href="@{/tickets/edit/{id}(id=${ticket.ticketNo})}" class="btn btn-warning me-2">Edit (Admin)</a>
+
+            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                Delete (Admin)
+            </button>
+        </div>
+    </div>
+
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
+                    <p class="mt-3">Are you sure you want to delete <strong>Ticket #[[${ticket.ticketNo}]]</strong>?</p>
+                    <p class="text-muted small">This action cannot be undone and will be removed from MS SQL.</p>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form th:action="@{/tickets/delete/{id}(id=${ticket.ticketNo})}" method="post">
+                        <button type="submit" class="btn btn-danger px-4">Yes, Delete It</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</div>
+</body>
+</html>

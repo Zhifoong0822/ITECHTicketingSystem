@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Field & Ticket Manager</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="container mt-5">
+<div class="card shadow">
+    <div class="card-header bg-dark text-white d-flex justify-content-between">
+        <h3>System Configuration (Admin)</h3>
+        <span class="badge bg-warning text-dark">Dynamic Mode</span>
+    </div>
+
+    <div class="card-body">
+        <h5 class="text-primary border-bottom pb-2">Manage Active Fields</h5>
+        <form th:action="@{/admin/fields/add}" method="post" class="row g-2 mb-4">
+            <div class="col-md-5">
+                <input type="text" name="fieldName" class="form-control" placeholder="New Field Name (e.g. Serial Number)">
+            </div>
+            <div class="col-md-4">
+                <select name="fieldType" class="form-select">
+                    <option value="TEXT">Text Input</option>
+                    <option value="NUMBER">Number</option>
+                    <option value="DATE">Date Picker</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">+ Add Field</button>
+            </div>
+        </form>
+
+        <h5 class="text-secondary border-bottom pb-2 mt-4">Current Form Preview</h5>
+        <form class="p-3 border rounded bg-light">
+            <div class="row">
+                <div th:each="field : ${activeFields}" class="col-md-6 mb-3">
+                    <label class="form-label fw-bold" th:text="${field.label}"></label>
+                    <div class="input-group">
+                        <input th:type="${field.type}" class="form-control" th:placeholder="'Enter ' + ${field.label}">
+                        <button class="btn btn-outline-danger" type="button">Remove Field</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="card-footer text-muted small">
+        Note: Adding or removing fields here will update the "Add Ticket" page for all members.
+    </div>
+</div>
+</body>
+</html>

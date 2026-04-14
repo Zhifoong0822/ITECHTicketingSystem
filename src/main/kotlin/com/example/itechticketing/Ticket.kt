@@ -8,28 +8,36 @@ import java.time.LocalTime
 class Ticket(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val ticketNo: Long = 0, // Primary Key (工单编号)
+    @Column(name = "ticket_no") // Matches your SQL Primary Key
+    val ticketNo: Long = 0,
 
     @Column(nullable = false)
-    var date: LocalDate, // Date (日期)
+    var date: LocalDate,
 
-    var brand: String? = null, // Brand (品牌)
+    var brand: String? = null,
 
-    var partsNumber: String? = null, // Parts Number (零件编号)
+    @Column(name = "parts_number") // Forces snake_case
+    var partsNumber: String? = null,
 
-    var dcRoom: String? = null, // DC 机房
+    @Column(name = "dc_room")
+    var dcRoom: String? = null,
 
-    var ticketTitle: String? = null, // Tickets (工单标题/内容)
+    @Column(name = "ticket_title")
+    var ticketTitle: String? = null,
 
-    var leadEngineer: String? = null, // Lead Engineer (主工程师)
+    @Column(name = "lead_engineer")
+    var leadEngineer: String? = null,
 
-    var otherEngineer: String? = null, // Other Engineer (协助工程师)
+    @Column(name = "other_engineer")
+    var otherEngineer: String? = null,
 
-    var manpower: Double? = null, // Total Manpower (总人天)
+    var manpower: Double? = null,
 
-    var startTime: LocalTime? = null, // Start Time (开始时间)
+    @Column(name = "start_time")
+    var startTime: LocalTime? = null,
 
-    var endTime: LocalTime? = null, // End Time (结束时间)
+    @Column(name = "end_time")
+    var endTime: LocalTime? = null,
 
     @Enumerated(EnumType.STRING)
     var status: TicketStatus = TicketStatus.OPEN
