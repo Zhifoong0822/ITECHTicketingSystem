@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Summary Dashboard</title>
+</head>
+<body>
+
+<h1>Ticket Summary Dashboard</h1>
+
+<p>Total Tickets: <span id="totalTickets">0</span></p>
+<p>Total Manpower: <span id="totalManpower">0</span></p>
+
+<button onclick="loadSummary()">Load Summary</button>
+
+<script>
+    function loadSummary() {
+        fetch('/api/summary')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("totalTickets").innerText = data.totalTickets;
+                document.getElementById("totalManpower").innerText = data.totalManpower;
+            })
+            .catch(error => console.error("Error:", error));
+    }
+</script>
+
+</body>
+</html>
