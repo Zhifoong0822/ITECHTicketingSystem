@@ -4,30 +4,36 @@
     <title>Ticket Search</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .table-container { min-height: 400px; }
+        .search-card { background-color: #f8f9fa; border: 1px solid #dee2e6; }
+        .text-id { font-weight: 700; color: #0d6efd; }
+        .badge-status { min-width: 110px; display: inline-block; text-align: center; }
+    </style>
 </head>
 <body class="container mt-5">
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2><i class="bi bi-speedometer2"></i> Ticket Search Dashboard</h2>
+    <h2><i class="bi bi-speedometer2 text-primary"></i> Ticket Dashboard</h2>
     <div>
-        <a th:href="@{/tickets/create}" class="btn btn-success me-2">
+        <a th:href="@{/tickets/create}" class="btn btn-success me-2 shadow-sm">
             <i class="bi bi-plus-circle"></i> Create New Ticket
         </a>
-        <a href="/admin/fields" class="btn btn-dark">
+        <a href="/admin/fields" class="btn btn-dark shadow-sm">
             <i class="bi bi-gear-fill"></i> Manage System Fields
         </a>
     </div>
 </div>
 <hr>
 
-<form th:action="@{/tickets/search}" method="get" class="row g-3 mb-4 p-3 bg-light border rounded shadow-sm">
+<form th:action="@{/tickets/search}" method="get" class="row g-3 mb-4 p-4 search-card rounded shadow-sm">
     <div class="col-md-2">
         <label class="form-label fw-bold">Ticket No</label>
         <input type="number" name="id" th:value="${param.id}" class="form-control" placeholder="ID...">
     </div>
     <div class="col-md-3">
         <label class="form-label fw-bold">Lead Engineer</label>
-        <input type="text" name="leadEngineer" th:value="${param.leadEngineer}" class="form-control" placeholder="Name...">
+        <input type="text" name="leadEngineer" th:value="${param.leadEngineer}" class="form-control" placeholder="Search Engineer...">
     </div>
     <div class="col-md-3">
         <label class="form-label fw-bold">Start Date</label>
@@ -41,58 +47,76 @@
         <button type="submit" class="btn btn-primary w-100">Search</button>
     </div>
     <div class="col-12 mt-2">
-        <a th:href="@{/tickets/search}" class="btn btn-link btn-sm text-secondary text-decoration-none">
-            <i class="bi bi-arrow-counterclockwise"></i> Reset Filters
+        <a th:href="@{/tickets/search}" class="btn btn-link btn-sm text-secondary text-decoration-none p-0">
+            <i class="bi bi-arrow-counterclockwise"></i> Reset All Filters
         </a>
     </div>
 </form>
 
-<div th:if="${totalTickets != null}">
-    <div class="alert alert-info py-2" th:if="${totalTickets > 0}">
-        <i class="bi bi-info-circle-fill me-2"></i> Found <strong>[[${totalTickets}]]</strong> ticket(s).
-    </div>
-    <div class="alert alert-warning py-2" th:if="${totalTickets == 0}">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i> No tickets found. Try different criteria.
-    </div>
-</div>
-
-<div class="table-responsive shadow-sm rounded">
+<div class="table-responsive shadow-sm rounded table-container">
     <table class="table table-striped table-hover align-middle" th:if="${tickets != null and !tickets.isEmpty()}">
         <thead class="table-dark">
         <tr>
-            <th>No</th>
-            <th>Date</th>
+            <th style="width: 8%">No</th>
+            <th style="width: 12%">Date</th>
             <th>Brand</th>
-            <th>DC Room</th>
             <th>Lead Engineer</th>
-            <th class="text-center">Action</th>
+            <th style="width: 15%">Live Status</th>
+            <th class="text-center" style="width: 10%">Action</th>
         </tr>
         </thead>
         <tbody>
         <tr th:each="ticket : ${tickets}">
-            <td class="fw-bold" th:text="${ticket.ticketNo}"></td>
+            <td class="text-id" th:text="${ticket.ticketNo}"></td>
             <td th:text="${ticket.dateCreated}"></td>
 
             <td>
-                        <span th:each="val : ${ticket.dynamicValues}"
-                              th:if="${val.fieldDefinition.label == 'Brand'}"
-                              th:text="${val.value}"></span>
+                <span th:each="val : ${ticket.dynamicValues}"
+                      th:if="${val.fieldDefinition.label.equalsIgnoreCase('Brand')}"
+                      th:text="${val.value}"></span>
             </td>
 
             <td>
-                        <span th:each="val : ${ticket.dynamicValues}"
-                              th:if="${val.fieldDefinition.label == 'DC Room'}"
-                              th:text="${val.value}"></span>
+                <span th:each="val : ${ticket.dynamicValues}"
+                      th:if="${val.fieldDefinition.label.equalsIgnoreCase('Lead Engineer')}"
+                      th:text="${val.value}"></span>
             </td>
 
             <td>
-                        <span th:each="val : ${ticket.dynamicValues}"
-                              th:if="${val.fieldDefinition.label == 'Lead Engineer'}"
-                              th:text="${val.value}"></span>
+                <div th:with="currentTime=${#temporals.format(#temporals.createNow(), 'HH:mm')}">
+                    <th:block th:each="val : ${ticket.dynamicValues}">
+                        <th:block th:if="${val.fieldDefinition.label.equalsIgnoreCase('Start Time')}" th:with="startTime=${val.value}">
+                            <th:block th:each="val2 : ${ticket.dynamicValues}">
+                                <th:block th:if="${val2.fieldDefinition.label.equalsIgnoreCase('End Time')}" th:with="endTime=${val2.value}">
+
+                                    <span th:if="${!#strings.isEmpty(endTime) and currentTime > endTime}"
+                                          class="badge bg-success badge-status shadow-sm">
+                                        <i class="bi bi-check-circle-fill"></i> COMPLETED
+                                    </span>
+
+                                    <span th:if="${!#strings.isEmpty(startTime) and !#strings.isEmpty(endTime) and currentTime >= startTime and currentTime <= endTime}"
+                                          class="badge bg-warning text-dark badge-status shadow-sm">
+                                        <i class="bi bi-clock-history"></i> IN PROGRESS
+                                    </span>
+
+                                    <span th:if="${!#strings.isEmpty(startTime) and currentTime < startTime}"
+                                          class="badge bg-primary badge-status shadow-sm">
+                                        <i class="bi bi-hourglass-split"></i> OPEN
+                                    </span>
+
+                                </th:block>
+                            </th:block>
+                        </th:block>
+                    </th:block>
+
+                    <span th:if="${ticket.dynamicValues.size() < 9}" class="badge bg-secondary badge-status shadow-sm">
+                        <i class="bi bi-dash-circle"></i> PENDING
+                    </span>
+                </div>
             </td>
 
             <td class="text-center">
-                <a th:href="@{/tickets/details/{id}(id=${ticket.ticketNo})}" class="btn btn-sm btn-outline-info">
+                <a th:href="@{/tickets/details/{id}(id=${ticket.ticketNo})}" class="btn btn-sm btn-info text-white shadow-sm">
                     <i class="bi bi-eye"></i> View
                 </a>
             </td>

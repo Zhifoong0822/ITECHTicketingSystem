@@ -7,6 +7,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import org.springframework.web.bind.WebDataBinder
 import java.beans.PropertyEditorSupport
+import org.springframework.format.annotation.DateTimeFormat
 
 @Controller
 @RequestMapping("/tickets")
@@ -18,38 +19,58 @@ class TicketController(
     @InitBinder
     fun initBinder(binder: WebDataBinder) {
         binder.registerCustomEditor(LocalDate::class.java, object : PropertyEditorSupport() {
-            override fun setAsText(text: String) {
-                value = LocalDate.parse(text, DateTimeFormatter.ISO_DATE)
+            override fun setAsText(text: String?) {
+                // FIX: Check for null or empty string before parsing
+                if (text.isNullOrBlank()) {
+                    value = null
+                } else {
+                    try {
+                        value = LocalDate.parse(text, DateTimeFormatter.ISO_DATE)
+                    } catch (e: Exception) {
+                        value = null
+                    }
+                }
             }
         })
     }
 
-    // --- NEW: ENGINEER INPUT FORM ---
-
     @GetMapping("/create")
     fun showCreateForm(model: Model): String {
-        // Fetches Brand, Lead Engineer, etc., created by Admin
-        model.addAttribute("activeFields", fieldDefinitionRepository.findAll())
+        val allFields = fieldDefinitionRepository.findAll()
+
+        val formOrder = listOf(
+            "Brand",
+            "Parts Number",
+            "DC Room",
+            "Tickets Work Order",
+            "Lead Engineer",
+            "Other Engineer",
+            "Manpower",
+            "Start Time",
+            "End Time"
+        )
+
+        val sortedFields = formOrder.mapNotNull { label ->
+            allFields.find { it.label.trim().equals(label, ignoreCase = true) }
+        }
+
+        model.addAttribute("activeFields", sortedFields)
         return "create-ticket"
     }
 
     @PostMapping("/save")
     fun saveTicket(@RequestParam allParams: Map<String, String>): String {
-        // 1. Create the base Ticket record
         val ticket = Ticket().apply {
             dateCreated = LocalDate.now()
             status = TicketStatus.OPEN
         }
 
-        // 2. Save ticket first to generate the Ticket ID for Foreign Keys
         val savedTicket = ticketRepository.save(ticket)
 
-        // 3. Collect all dynamic inputs from the form
         val activeFields = fieldDefinitionRepository.findAll()
         val values = activeFields.mapNotNull { field ->
             val submittedValue = allParams["field_${field.id}"]
 
-            // Only save if the engineer actually typed something
             if (!submittedValue.isNullOrBlank()) {
                 TicketValue(
                     ticket = savedTicket,
@@ -59,7 +80,6 @@ class TicketController(
             } else null
         }.toMutableList()
 
-        // 4. Attach values and final save
         savedTicket.dynamicValues = values
         ticketRepository.save(savedTicket)
 
@@ -76,22 +96,33 @@ class TicketController(
         @RequestParam(required = false) endDate: LocalDate?,
         model: Model
     ): String {
-        val results = when {
-            id != null -> ticketRepository.findById(id).map { listOf(it) }.orElse(emptyList())
-            !leadEngineer.isNullOrBlank() -> {
-                // In Dynamic EAV, search is slightly different.
-                // For now, this finds tickets where ANY dynamic value matches the search string.
-                ticketRepository.findAll().filter { ticket ->
-                    ticket.dynamicValues.any { it.value.contains(leadEngineer, ignoreCase = true) }
-                }
-            }
-            startDate != null && endDate != null -> ticketRepository.findByDateCreatedBetween(startDate, endDate)
-            else -> ticketRepository.findAll()
+        var tickets = ticketRepository.findAll()
+
+        // 1. Filter by ID
+        if (id != null) {
+            tickets = tickets.filter { it.ticketNo == id }
         }
 
-        model.addAttribute("tickets", results)
-        model.addAttribute("totalTickets", results.size)
-        model.addAttribute("searchQuery", leadEngineer ?: id ?: "$startDate to $endDate")
+        // 2. Filter by Lead Engineer (Dynamic Value check)
+        if (!leadEngineer.isNullOrBlank()) {
+            tickets = tickets.filter { ticket ->
+                ticket.dynamicValues.any {
+                    it.fieldDefinition.label.equals("Lead Engineer", ignoreCase = true) &&
+                            it.value.contains(leadEngineer, ignoreCase = true)
+                }
+            }
+        }
+
+        // 3. Filter by Date Range
+        if (startDate != null) {
+            tickets = tickets.filter { !it.dateCreated.isBefore(startDate) }
+        }
+        if (endDate != null) {
+            tickets = tickets.filter { !it.dateCreated.isAfter(endDate) }
+        }
+
+        model.addAttribute("tickets", tickets)
+        model.addAttribute("totalTickets", tickets.size)
         return "search"
     }
 
@@ -111,13 +142,12 @@ class TicketController(
     fun showEditForm(@PathVariable id: Long, model: Model): String {
         val ticket = ticketRepository.findById(id).orElseThrow()
         model.addAttribute("ticket", ticket)
-        model.addAttribute("statusList", TicketStatus.values())
+        model.addAttribute("statusList", TicketStatus.entries)
         return "edit"
     }
 
     @PostMapping("/update")
     fun updateTicket(@ModelAttribute ticket: Ticket): String {
-        // Note: For dynamic fields, you'd loop through allParams again here
         ticketRepository.save(ticket)
         return "redirect:/tickets/details/${ticket.ticketNo}"
     }
@@ -131,4 +161,26 @@ class TicketController(
     @GetMapping("/api")
     @ResponseBody
     fun getAllTicketsApi(): List<Ticket> = ticketRepository.findAll()
+
+    // Helper for Live Status
+    fun getLiveStatus(ticket: Ticket): String {
+        val now = java.time.LocalTime.now()
+
+        val startStr = ticket.dynamicValues.find { it.fieldDefinition.label.contains("Start Time") }?.value
+        val endStr = ticket.dynamicValues.find { it.fieldDefinition.label.contains("End Time") }?.value
+
+        return try {
+            val start = java.time.LocalTime.parse(startStr)
+            val end = java.time.LocalTime.parse(endStr)
+
+            when {
+                now.isBefore(start) -> "OPEN"
+                now.isAfter(start) && now.isBefore(end) -> "IN PROGRESS"
+                now.isAfter(end) -> "COMPLETED"
+                else -> "UNKNOWN"
+            }
+        } catch (e: Exception) {
+            "PENDING DATA"
+        }
+    }
 }
