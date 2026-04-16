@@ -1,5 +1,6 @@
 package com.example.itechticketing
 
+import org.springframework.data.jpa.domain.AbstractAuditable_.createdBy
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.*
@@ -8,6 +9,7 @@ import java.time.format.DateTimeFormatter
 import org.springframework.web.bind.WebDataBinder
 import java.beans.PropertyEditorSupport
 import org.springframework.format.annotation.DateTimeFormat
+import org.springframework.security.core.Authentication
 
 @Controller
 @RequestMapping("/tickets")
@@ -59,10 +61,10 @@ class TicketController(
     }
 
     @PostMapping("/save")
-    fun saveTicket(@RequestParam allParams: Map<String, String>): String {
-        val ticket = Ticket().apply {
+    fun saveTicket(@RequestParam allParams: Map<String, String>, authentication: Authentication): String {        val ticket = Ticket().apply {
             dateCreated = LocalDate.now()
             status = TicketStatus.OPEN
+            createdBy = authentication.name
         }
 
         val savedTicket = ticketRepository.save(ticket)
@@ -94,7 +96,8 @@ class TicketController(
         @RequestParam(required = false) leadEngineer: String?,
         @RequestParam(required = false) startDate: LocalDate?,
         @RequestParam(required = false) endDate: LocalDate?,
-        model: Model
+        model: Model,
+        authentication: Authentication
     ): String {
         var tickets = ticketRepository.findAll()
 
@@ -123,6 +126,7 @@ class TicketController(
 
         model.addAttribute("tickets", tickets)
         model.addAttribute("totalTickets", tickets.size)
+        model.addAttribute("userRoles", authentication.authorities.map { it.authority })
         return "search"
     }
 

@@ -15,6 +15,7 @@ class Ticket(
     @Enumerated(EnumType.STRING)
     var status: TicketStatus = TicketStatus.OPEN,
 
+    var createdBy: String? = null,
     // This is the link to all the dynamic data (Brand, Serial No, etc.)
     @OneToMany(mappedBy = "ticket", cascade = [CascadeType.ALL], fetch = FetchType.EAGER)
     var dynamicValues: MutableList<TicketValue> = mutableListOf()

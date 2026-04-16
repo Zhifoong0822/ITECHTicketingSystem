@@ -23,23 +23,27 @@ class SecurityConfig(
             .csrf { it.disable() }
             .authorizeHttpRequests { auth ->
                 auth
-                    // Public access
+                    // 1. Static resources and login page are open to everyone
                     .requestMatchers("/login", "/css/**", "/js/**", "/webjars/**").permitAll()
-                    // Admin only - use hasAuthority instead of hasRole since your User class returns ROLE_ prefix
-                    .requestMatchers("/admin/**", "/summary/**").hasAuthority("ROLE_ADMIN")
-                    // Engineer access (can create tickets)
+
+                    // 2. ADMIN ONLY: Manage System Fields (/admin/**) and Delete functionality
+                    // Note: Removed /edit and /update as requested
+                    .requestMatchers("/admin/**", "/tickets/delete/**").hasAuthority("ROLE_ADMIN")
+
+                    // 3. ADMIN & ENGINEER: Can access the creation forms and save data
                     .requestMatchers("/tickets/create", "/tickets/save").hasAnyAuthority("ROLE_ADMIN", "ROLE_ENGINEER")
-                    // Engineer and China can view/search
-                    .requestMatchers("/tickets/search", "/tickets/details/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_ENGINEER", "ROLE_CHINA")
-                    // Engineer can edit/delete their tickets
-                    .requestMatchers("/tickets/edit/**", "/tickets/update", "/tickets/delete/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_ENGINEER")
-                    // Everything else requires authentication
+
+                    // 4. EVERYONE (Admin, Engineer, China): Can search and view details
+                    .requestMatchers("/tickets/search", "/tickets/details/**").authenticated()
+
+                    // 5. Global catch-all: any other page requires a login
                     .anyRequest().authenticated()
             }
             .formLogin { form ->
                 form
                     .loginPage("/login")
-                    .defaultSuccessUrl("/dashboard", true)
+                    // Redirects to /tickets/search after a successful login
+                    .defaultSuccessUrl("/tickets/search", true)
                     .permitAll()
             }
             .logout { logout ->
