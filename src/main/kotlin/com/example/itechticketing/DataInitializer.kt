@@ -83,7 +83,11 @@ class DataInitializer(
             val endTimeField = requireNotNull(allFields.find { it.label == "End Time" }) { "End Time field not found" }
 
             // Create first ticket
-            val ticket1 = Ticket(dateCreated = LocalDate.now(), status = TicketStatus.COMPLETED)
+            val ticket1 = Ticket(
+                tickets = 101, // ✅ Adding the int value for the 'tickets' field
+                dateCreated = LocalDate.now(),
+                status = TicketStatus.COMPLETED
+            )
             ticketRepository.save(ticket1)
 
             val values1 = listOf(
@@ -99,8 +103,11 @@ class DataInitializer(
             ticket1.dynamicValues = values1.toMutableList()
             ticketRepository.save(ticket1)
 
-            // Create second ticket
-            val ticket2 = Ticket(dateCreated = LocalDate.now(), status = TicketStatus.IN_PROGRESS)
+            val ticket2 = Ticket(
+                tickets = 102, // ✅ Adding the int value
+                dateCreated = LocalDate.now(),
+                status = TicketStatus.IN_PROGRESS
+            )
             ticketRepository.save(ticket2)
 
             val values2 = listOf(

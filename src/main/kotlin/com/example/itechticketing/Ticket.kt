@@ -10,6 +10,9 @@ class Ticket(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val ticketNo: Long = 0,
 
+    @Column(nullable = false)
+    var tickets: Int = 0,
+
     var dateCreated: LocalDate = LocalDate.now(),
 
     @Enumerated(EnumType.STRING)
