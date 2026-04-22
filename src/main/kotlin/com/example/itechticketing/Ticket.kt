@@ -10,12 +10,16 @@ class Ticket(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val ticketNo: Long = 0,
 
+    @Column(nullable = false)
+    var tickets: Int = 0,
+
     @Column(name = "date")   // 🔥 THIS LINE FIXES YOUR ERROR
     var dateCreated: LocalDate = LocalDate.now(),
 
     @Enumerated(EnumType.STRING)
     var status: TicketStatus = TicketStatus.OPEN,
 
+    var createdBy: String? = null,
     // This is the link to all the dynamic data (Brand, Serial No, etc.)
     @OneToMany(mappedBy = "ticket", cascade = [CascadeType.ALL], fetch = FetchType.EAGER)
     var dynamicValues: MutableList<TicketValue> = mutableListOf()

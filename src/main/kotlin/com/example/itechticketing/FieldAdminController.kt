@@ -10,7 +10,7 @@ class AdminFieldController(val fieldRepo: FieldDefinitionRepository) {
 
     @GetMapping
     fun showManager(model: Model): String {
-        // This provides the 'activeFields' used in your HTML preview
+        // This method is already protected by SecurityConfig (requires ADMIN role)
         model.addAttribute("activeFields", fieldRepo.findAll())
         return "admin-fields"
     }
@@ -20,10 +20,10 @@ class AdminFieldController(val fieldRepo: FieldDefinitionRepository) {
         val newField = FieldDefinition(
             label = fieldName,
             fieldType = fieldType,
-            isRequired = false // Default to false
+            isRequired = false
         )
         fieldRepo.save(newField)
-        return "redirect:/admin/fields" // Refresh the page to show new field
+        return "redirect:/admin/fields"
     }
 
     @PostMapping("/delete/{id}")

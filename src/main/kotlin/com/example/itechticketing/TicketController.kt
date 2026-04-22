@@ -1,5 +1,6 @@
 package com.example.itechticketing
 
+import org.springframework.data.jpa.domain.AbstractAuditable_.createdBy
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.*
@@ -8,6 +9,7 @@ import java.time.format.DateTimeFormatter
 import org.springframework.web.bind.WebDataBinder
 import java.beans.PropertyEditorSupport
 import org.springframework.format.annotation.DateTimeFormat
+import org.springframework.security.core.Authentication
 
 @Controller
 @RequestMapping("/tickets")
@@ -59,25 +61,57 @@ class TicketController(
     }
 
     @PostMapping("/save")
-    fun saveTicket(@RequestParam allParams: Map<String, String>): String {
-        val ticket = Ticket().apply {
-            dateCreated = LocalDate.now()
-            status = TicketStatus.OPEN
-        }
-
-        val savedTicket = ticketRepository.save(ticket)
+    fun saveTicket(
+        @RequestParam allParams: Map<String, String>,
+        @RequestParam ticketsWorkOrder: Int,
+        authentication: Authentication
+    ): String {
 
         val activeFields = fieldDefinitionRepository.findAll()
-        val values = activeFields.mapNotNull { field ->
-            val submittedValue = allParams["field_${field.id}"]
 
-            if (!submittedValue.isNullOrBlank()) {
-                TicketValue(
-                    ticket = savedTicket,
-                    fieldDefinition = field,
-                    value = submittedValue
-                )
-            } else null
+        // 1. DATA VALIDATION LOOP
+        for (field in activeFields) {
+            val rawValue = allParams["field_${field.id}"] ?: ""
+
+            // Mandatory check
+            if (rawValue.isBlank()) return "redirect:/tickets/create?error=missing_field"
+
+            // Type Enforcement
+            when (field.fieldType) {
+                "NUMBER" -> {
+                    // Regex: If it contains anything that IS NOT a digit, reject or clean it
+                    if (!rawValue.all { it.isDigit() }) {
+                        // Option A: Clean it (remove non-digits)
+                        // val cleaned = rawValue.filter { it.isDigit() }
+                        // Option B: Reject it (safer)
+                        return "redirect:/tickets/create?error=invalid_number"
+                    }
+                }
+                "TIME" -> {
+                    // Ensure it matches HH:mm format
+                    val timeRegex = Regex("^([01]?[0-9]|2[0-3]):[0-5][0-9]$")
+                    if (!timeRegex.matches(rawValue)) {
+                        return "redirect:/tickets/create?error=invalid_time"
+                    }
+                }
+            }
+        }
+
+        // 2. SAVE LOGIC (Only runs if validation passes)
+        val ticket = Ticket().apply {
+            tickets = Math.abs(ticketsWorkOrder)
+            dateCreated = LocalDate.now()
+            status = TicketStatus.OPEN
+            createdBy = authentication.name
+        }
+        val savedTicket = ticketRepository.save(ticket)
+
+        val values = activeFields.map { field ->
+            TicketValue(
+                ticket = savedTicket,
+                fieldDefinition = field,
+                value = allParams["field_${field.id}"]!!.trim()
+            )
         }.toMutableList()
 
         savedTicket.dynamicValues = values
@@ -91,10 +125,12 @@ class TicketController(
     @GetMapping("/search")
     fun searchTickets(
         @RequestParam(required = false) id: Long?,
+        @RequestParam(required = false) workOrder: Int?,
         @RequestParam(required = false) leadEngineer: String?,
         @RequestParam(required = false) startDate: LocalDate?,
         @RequestParam(required = false) endDate: LocalDate?,
-        model: Model
+        model: Model,
+        authentication: Authentication
     ): String {
         var tickets = ticketRepository.findAll()
 
@@ -102,6 +138,8 @@ class TicketController(
         if (id != null) {
             tickets = tickets.filter { it.ticketNo == id }
         }
+
+        if (workOrder != null) tickets = tickets.filter { it.tickets == workOrder }
 
         // 2. Filter by Lead Engineer (Dynamic Value check)
         if (!leadEngineer.isNullOrBlank()) {
@@ -123,6 +161,7 @@ class TicketController(
 
         model.addAttribute("tickets", tickets)
         model.addAttribute("totalTickets", tickets.size)
+        model.addAttribute("userRoles", authentication.authorities.map { it.authority })
         return "search"
     }
 
