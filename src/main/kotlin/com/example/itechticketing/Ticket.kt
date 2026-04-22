@@ -10,6 +10,7 @@ class Ticket(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val ticketNo: Long = 0,
 
+    @Column(name = "date")   // 🔥 THIS LINE FIXES YOUR ERROR
     var dateCreated: LocalDate = LocalDate.now(),
 
     @Enumerated(EnumType.STRING)
