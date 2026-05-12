@@ -11,8 +11,15 @@
 <body class="container mt-5">
 <div class="card" th:if="${ticket != null}">
     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-        <h3 class="mb-0" th:text="'Ticket Details: #' + ${ticket.ticketNo}"></h3>
-        <span class="badge bg-light text-primary fs-6" th:text="${ticket.status}"></span>
+        <h3 class="mb-0" th:text="'Ticket Details: #' + ${ticket.tickets}"></h3>
+
+        <!-- Dynamic Badge Color Based on liveStatus -->
+        <span class="badge fs-6 shadow-sm"
+              th:text="${liveStatus}"
+              th:classappend="${liveStatus == 'UPCOMING' ? 'bg-info text-white' :
+                           (liveStatus == 'IN PROGRESS' ? 'bg-warning text-dark' :
+                           (liveStatus == 'COMPLETED' ? 'bg-success text-white' : 'bg-secondary'))}">
+    </span>
     </div>
 
     <div class="card-body p-4">

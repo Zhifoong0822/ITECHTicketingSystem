@@ -1,66 +1,75 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Field & Ticket Manager</title>
+    <title>System Field Manager</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         .card { border: none; border-radius: 12px; }
         .preview-container {
             background-color: #f8f9fa;
-            border: 2px dashed #dee2e6;
+            border: 1px solid #dee2e6;
             border-radius: 10px;
         }
         .field-card {
             background: white;
             transition: transform 0.2s;
         }
-        .field-card:hover { transform: translateY(-3px); }
+        .section-header {
+            background: #f1f3f5;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            color: #495057;
+            display: block;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body class="bg-light">
 
 <div class="container mt-5">
     <div class="card shadow">
-        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
-            <div>
-                <h3 class="mb-0"><i class="bi bi-gear-fill me-2"></i>System Configuration</h3>
-                <small class="text-warning">Admin Dashboard</small>
-            </div>
-            <span class="badge bg-warning text-dark px-3 fs-6">Dynamic EAV Mode</span>
+        <!-- Header: Removed Technical Badges -->
+        <div class="card-header bg-dark text-white py-3">
+            <h3 class="mb-0"><i class="bi bi-gear-fill me-2"></i>Manage System Fields</h3>
+            <p class="mb-0 text-white-50 small">Configure the information required for every ticket</p>
         </div>
 
         <div class="card-body p-4">
-            <h5 class="text-primary border-bottom pb-2 mb-3">
-                <i class="bi bi-plus-circle-fill me-2"></i>Create New Field
-            </h5>
+
+            <!-- Step 1: More obvious instruction for adding fields -->
+            <div class="section-header border-start border-primary border-4">
+                STEP 1: DEFINE A NEW CATEGORY / FIELD
+            </div>
 
             <form th:action="@{/admin/fields/add}" method="post" class="row g-3 mb-5 align-items-end">
                 <div class="col-md-5">
-                    <label class="form-label small fw-bold">Field Label (Display Name)</label>
+                    <label class="form-label small fw-bold">Field Name (e.g. Serial Number)</label>
                     <input type="text" name="fieldName" class="form-control"
-                           placeholder="e.g. Serial Number or Lead Engineer" required>
+                           placeholder="Type the field label here..." required>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label small fw-bold">Input Type</label>
+                    <label class="form-label small fw-bold">Select Data Type</label>
                     <select name="fieldType" class="form-select">
-                        <option value="TEXT">Text Input</option>
-                        <option value="NUMBER">Number</option>
-                        <option value="DATE">Date Picker</option>
+                        <option value="TEXT">Text (Alphabet/Numbers)</option>
+                        <option value="NUMBER">Digits Only</option>
+                        <option value="DATE">Calendar Date</option>
                         <option value="TIME">Time Picker</option>
                     </select>
                 </div>
                 <div class="col-md-3">
                     <button type="submit" class="btn btn-primary w-100 shadow-sm">
-                        <i class="bi bi-save me-1"></i> Register Field
+                        <i class="bi bi-plus-lg me-1"></i> ADD TO SYSTEM
                     </button>
                 </div>
             </form>
 
-            <h5 class="text-secondary border-bottom pb-2 mt-4">
-                <i class="bi bi-eye-fill me-2"></i>Active Ticket Layout Preview
-            </h5>
-            <p class="text-muted small">This is how the input form currently looks for your team.</p>
+            <!-- Step 2: Clearer Preview Title -->
+            <div class="section-header border-start border-secondary border-4">
+                STEP 2: CURRENT ACTIVE LAYOUT PREVIEW
+            </div>
+            <p class="text-muted small px-2">Below are the fields currently active in the ticket creation form.</p>
 
             <div class="p-4 preview-container">
                 <div class="row" th:if="${not #lists.isEmpty(activeFields)}">
@@ -68,16 +77,16 @@
                         <div class="p-3 border rounded field-card shadow-sm">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <label class="form-label fw-bold text-dark mb-0" th:text="${field.label}"></label>
-                                <span class="badge bg-info text-dark" th:text="${field.fieldType}"></span>
+                                <span class="badge bg-secondary opacity-75" th:text="${field.fieldType}"></span>
                             </div>
 
                             <div class="input-group">
                                 <input th:type="${field.fieldType.toLowerCase()}"
-                                       class="form-control"
-                                       th:placeholder="'Enter ' + ${field.label}" disabled>
+                                       class="form-control bg-light"
+                                       th:placeholder="'Preview for ' + ${field.label}" disabled>
 
                                 <form th:action="@{/admin/fields/delete/{id}(id=${field.id})}" method="post"
-                                      onsubmit="return confirm('Deleting this field will remove all historical data associated with it. Proceed?');">
+                                      onsubmit="return confirm('WARNING: Removing this field will permanently delete all data stored under this category in history. Continue?');">
                                     <button class="btn btn-outline-danger" type="submit">
                                         <i class="bi bi-trash"></i>
                                     </button>
@@ -87,23 +96,19 @@
                     </div>
                 </div>
 
+                <!-- Empty State -->
                 <div th:if="${#lists.isEmpty(activeFields)}" class="text-center py-5">
-                    <i class="bi bi-layout-text-window-reverse display-1 text-light"></i>
-                    <p class="mt-3 text-muted">No dynamic fields found in MS SQL.<br>Add your first field above to begin.</p>
+                    <i class="bi bi-card-list display-1 text-light"></i>
+                    <p class="mt-3 text-muted">No fields defined yet. <br> Use the form above to add your first field.</p>
                 </div>
             </div>
         </div>
 
-        <div class="card-footer bg-white py-3 d-flex justify-content-between align-items-center">
-            <span class="text-success small"><i class="bi bi-database-check me-1"></i> MS SQL Connected</span>
-            <div class="btn-group">
-                <a th:href="@{/tickets/search}" class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Dashboard
-                </a>
-                <a th:href="@{/tickets/create}" class="btn btn-sm btn-outline-secondary">
-                    View Form <i class="bi bi-arrow-right"></i>
-                </a>
-            </div>
+        <!-- Footer: Cleaned up navigation -->
+        <div class="card-footer bg-white py-3">
+            <a th:href="@{/tickets/search}" class="btn btn-dark">
+                <i class="bi bi-check-circle me-1"></i> Finish & Save Configuration
+            </a>
         </div>
     </div>
 </div>

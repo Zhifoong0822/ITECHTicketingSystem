@@ -169,7 +169,11 @@ class TicketController(
     fun getTicketDetails(@PathVariable id: Long, model: Model): String {
         val ticket = ticketRepository.findById(id).orElse(null)
         if (ticket != null) {
+            // Calculate the live status using the helper function
+            val liveStatus = getLiveStatus(ticket)
+
             model.addAttribute("ticket", ticket)
+            model.addAttribute("liveStatus", liveStatus) // Pass the REAL status here
             return "details"
         }
         return "redirect:/tickets/search"
@@ -213,7 +217,7 @@ class TicketController(
             val end = java.time.LocalTime.parse(endStr)
 
             when {
-                now.isBefore(start) -> "OPEN"
+                now.isBefore(start) -> "UPCOMING"
                 now.isAfter(start) && now.isBefore(end) -> "IN PROGRESS"
                 now.isAfter(end) -> "COMPLETED"
                 else -> "UNKNOWN"
