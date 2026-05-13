@@ -41,7 +41,7 @@
 <form th:action="@{/tickets/search}" method="get" class="row g-3 mb-4 p-4 search-card rounded shadow-sm">
     <div class="col-md-2">
         <label class="form-label fw-bold">Ticket No (WO)</label>
-        <input type="number" name="id" th:value="${param.id}" class="form-control" placeholder="e.g. 101">
+        <input type="number" name="workOrder" th:value="${param.workOrder}" class="form-control" placeholder="e.g. 101">
     </div>
     <div class="col-md-3">
         <label class="form-label fw-bold">Lead Engineer</label>
@@ -92,27 +92,14 @@
             </td>
 
             <!-- Live Status Column -->
+            <!-- Live Status Column -->
             <td>
-                <div th:with="currentTime=${#temporals.format(#temporals.createNow(), 'HH:mm')}">
-                    <th:block th:each="val : ${ticket.dynamicValues}">
-                        <th:block th:if="${val.fieldDefinition.label.equalsIgnoreCase('Start Time')}" th:with="startTime=${val.value}">
-                            <th:block th:each="val2 : ${ticket.dynamicValues}">
-                                <th:block th:if="${val2.fieldDefinition.label.equalsIgnoreCase('End Time')}" th:with="endTime=${val2.value}">
-
-                                    <span th:if="${!#strings.isEmpty(endTime) and currentTime > endTime}"
-                                          class="badge bg-success badge-status shadow-sm">COMPLETED</span>
-
-                                    <span th:if="${!#strings.isEmpty(startTime) and !#strings.isEmpty(endTime) and currentTime >= startTime and currentTime <= endTime}"
-                                          class="badge bg-warning text-dark badge-status shadow-sm">IN PROGRESS</span>
-
-                                    <span th:if="${!#strings.isEmpty(startTime) and currentTime < startTime}"
-                                          class="badge bg-info badge-status shadow-sm">UPCOMING</span>
-
-                                </th:block>
-                            </th:block>
-                        </th:block>
-                    </th:block>
-                </div>
+                <th:block th:with="status=${liveStatusMap[ticket.ticketNo]}">
+                    <span th:if="${status == 'COMPLETED'}"   class="badge bg-success badge-status shadow-sm">COMPLETED</span>
+                    <span th:if="${status == 'IN PROGRESS'}" class="badge bg-warning text-dark badge-status shadow-sm">IN PROGRESS</span>
+                    <span th:if="${status == 'UPCOMING'}"    class="badge bg-info badge-status shadow-sm">UPCOMING</span>
+                    <span th:if="${status == 'PENDING DATA' or status == 'UNKNOWN'}" class="badge bg-secondary badge-status shadow-sm" th:text="${status}"></span>
+                </th:block>
             </td>
 
             <td class="text-center">

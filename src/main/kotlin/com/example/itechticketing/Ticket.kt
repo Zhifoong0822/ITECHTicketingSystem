@@ -13,7 +13,7 @@ class Ticket(
     @Column(nullable = false)
     var tickets: Int = 0,
 
-    @Column(name = "date")   // 🔥 THIS LINE FIXES YOUR ERROR
+    @Column(name = "date")
     var dateCreated: LocalDate = LocalDate.now(),
 
     @Enumerated(EnumType.STRING)

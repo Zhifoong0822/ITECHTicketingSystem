@@ -45,10 +45,6 @@
 
     <div class="card-footer bg-white py-3 d-flex justify-content-between">
         <a th:href="@{/tickets/search}" class="btn btn-outline-secondary">&larr; Back to Search</a>
-        <form th:action="@{/tickets/delete/{id}(id=${ticket.ticketNo})}" method="post"
-              onsubmit="return confirm('Are you sure?');">
-            <button type="submit" class="btn btn-danger">Delete Ticket</button>
-        </form>
     </div>
 </div>
 </body>

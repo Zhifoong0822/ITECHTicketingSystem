@@ -124,7 +124,6 @@ class TicketController(
 
     @GetMapping("/search")
     fun searchTickets(
-        @RequestParam(required = false) id: Long?,
         @RequestParam(required = false) workOrder: Int?,
         @RequestParam(required = false) leadEngineer: String?,
         @RequestParam(required = false) startDate: LocalDate?,
@@ -134,12 +133,9 @@ class TicketController(
     ): String {
         var tickets = ticketRepository.findAll()
 
-        // 1. Filter by ID
-        if (id != null) {
-            tickets = tickets.filter { it.ticketNo == id }
+        if (workOrder != null) {
+            tickets = tickets.filter { it.tickets == workOrder }  // matches 101, 102...
         }
-
-        if (workOrder != null) tickets = tickets.filter { it.tickets == workOrder }
 
         // 2. Filter by Lead Engineer (Dynamic Value check)
         if (!leadEngineer.isNullOrBlank()) {
@@ -162,6 +158,8 @@ class TicketController(
         model.addAttribute("tickets", tickets)
         model.addAttribute("totalTickets", tickets.size)
         model.addAttribute("userRoles", authentication.authorities.map { it.authority })
+        // In searchTickets(), add this:
+        model.addAttribute("liveStatusMap", tickets.associate { it.ticketNo to getLiveStatus(it) })
         return "search"
     }
 
@@ -207,23 +205,26 @@ class TicketController(
 
     // Helper for Live Status
     fun getLiveStatus(ticket: Ticket): String {
-        val now = java.time.LocalTime.now()
+        val now = java.time.LocalDateTime.now()
 
         val startStr = ticket.dynamicValues.find { it.fieldDefinition.label.contains("Start Time") }?.value
         val endStr = ticket.dynamicValues.find { it.fieldDefinition.label.contains("End Time") }?.value
 
         return try {
-            val start = java.time.LocalTime.parse(startStr)
-            val end = java.time.LocalTime.parse(endStr)
+            val startTime = java.time.LocalTime.parse(startStr)
+            val endTime = java.time.LocalTime.parse(endStr)
+
+            // Combine ticket's date with the start/end times
+            val startDateTime = java.time.LocalDateTime.of(ticket.dateCreated, startTime)
+            val endDateTime = java.time.LocalDateTime.of(ticket.dateCreated, endTime)
 
             when {
-                now.isBefore(start) -> "UPCOMING"
-                now.isAfter(start) && now.isBefore(end) -> "IN PROGRESS"
-                now.isAfter(end) -> "COMPLETED"
+                now.isBefore(startDateTime) -> "UPCOMING"
+                now.isAfter(startDateTime) && now.isBefore(endDateTime) -> "IN PROGRESS"
+                now.isAfter(endDateTime) -> "COMPLETED"
                 else -> "UNKNOWN"
             }
         } catch (e: Exception) {
             "PENDING DATA"
         }
-    }
-}
+    }}
